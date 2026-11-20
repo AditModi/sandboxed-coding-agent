@@ -8,7 +8,7 @@ An AI coding agent on Amazon EKS, split into three trust zones with AWS Nitro Sa
 - **Hands**, `runtimeClassName: isolated-sandbox` with `sandbox.amazonaws.com/network-isolated: "true"`: one VM per session, with no network. The repository's code, its tests and the model's commands run here.
 - **Broker**, `runtimeClassName: confidential-sandbox`: the only process that holds the GitHub token. AWS KMS releases the token only to this pod's measured Cedar policy. The broker only opens pull requests from `agent/*` branches, and never touches `.github/`.
 
-The article that explains every decision is `<link to the AWS Builder Center article>`.
+An article that explains every decision is coming soon on AWS Builder Center. Until then, [docs/](docs/README.md) walks through the design with all ten diagrams.
 
 ![architecture](docs/images/07-architecture.png)
 
@@ -21,7 +21,7 @@ The article that explains every decision is `<link to the AWS Builder Center art
 
 ## 0. Prepare GitHub
 
-1. Create a new **public** repository, for example `indian-numbers`, and push the contents of `demo-repo/` to its `main` branch.
+1. Create a new **public** repository, for example `indian-numbers`, and push the contents of `demo-repo/` to its `main` branch. A ready-made copy is at [AditModi/indian-numbers](https://github.com/AditModi/indian-numbers), with [issue #1](https://github.com/AditModi/indian-numbers/issues/1) open.
 2. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) for that one repository, with these permissions and nothing else:
    - **Contents**: read and write
    - **Pull requests**: read and write
@@ -107,6 +107,7 @@ These come from the Amazon EKS User Guide and the AWS blueprints:
 | `apps/broker/attested_recipient.py` | NSM attestation and CMS unwrap, vendored unchanged from [aws-samples/sample-eks-nitro-sandbox](https://github.com/aws-samples/sample-eks-nitro-sandbox) |
 | `demo-repo/` | the target repository, including one hostile test file and a poisoned issue |
 | `k8s/`, `policy/` | manifests, admission policy, the KMS key policy template, the generator profile |
+| `docs/README.md` | all ten diagrams, in reading order |
 | `docs/make_images.py` | draws every image in `docs/images/` |
 
-Built on the [Amazon EKS Nitro Sandbox blueprints](https://github.com/aws-samples/sample-eks-nitro-sandbox), especially their coding-agent and confidential samples. MIT-0.
+Built on the [Amazon EKS Nitro Sandbox blueprints](https://github.com/aws-samples/sample-eks-nitro-sandbox), especially their coding-agent and confidential samples. Licensed under MIT-0; `apps/broker/attested_recipient.py` keeps its original copyright from that repository.
