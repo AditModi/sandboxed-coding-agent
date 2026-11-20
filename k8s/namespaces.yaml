@@ -1,0 +1,20 @@
+# One namespace per trust zone. RBAC, admission policy and network policy are all scoped
+# by namespace, so drawing the zones as namespaces is what lets each control say "this
+# zone and no other".
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-brain
+  labels: { pod-security.kubernetes.io/enforce: restricted }
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-hands
+  labels: { pod-security.kubernetes.io/enforce: restricted }
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-broker
+  labels: { pod-security.kubernetes.io/enforce: restricted }

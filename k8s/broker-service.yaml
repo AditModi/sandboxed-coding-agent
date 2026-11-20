@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: broker
+  namespace: agent-broker
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: broker
+  namespace: agent-broker
+spec:
+  selector: { app: broker }
+  ports: [{ port: 8080, targetPort: 8080 }]
+---
+# Who may call the broker, and what the broker may call. An EKS Auto Mode
+# ApplicationNetworkPolicy is a NetworkPolicy that also accepts domainNames.
+# It is enforced on the node, outside the sandbox. Note what that means in confidential mode,
+# where the node is not trusted: this policy limits the code, not the node.
+apiVersion: networking.k8s.aws/v1alpha1
+kind: ApplicationNetworkPolicy
+metadata:
+  name: broker
+  namespace: agent-broker
+spec:
+  podSelector: { matchLabels: { app: broker } }
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: agent-brain } }
+          podSelector: { matchLabels: { app: brain } }
+      ports: [{ port: 8080, protocol: TCP }]
+  egress:
+    - to: [{ ipBlock: { cidr: 0.0.0.0/0 } }]
+      ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+    - to: [{ ipBlock: { cidr: 169.254.170.23/32 } }]   # EKS Pod Identity credentials
+      ports: [{ protocol: TCP, port: 80 }]
+    - to: [{ domainNames: ["kms.<AWS_REGION>.amazonaws.com", "api.github.com"] }]
+      ports: [{ protocol: TCP, port: 443 }]

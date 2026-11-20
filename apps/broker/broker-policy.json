@@ -1,0 +1,11 @@
+{
+  "_comment": "What the broker allows. Baked into the broker image, so it is part of the image digest, the Cedar policy and PCR17. Loosening any rule here changes the measurement, and KMS stops releasing the GitHub token until the key policy is updated too (experiment 6).",
+  "base_branch": "main",
+  "branch_prefix": "agent/",
+  "denied_path_prefixes": [".github/", ".git/", ".gitmodules", ".gitattributes"],
+  "denied_file_names": ["CODEOWNERS"],
+  "max_files": 10,
+  "max_file_bytes": 100000,
+  "max_title_chars": 120,
+  "max_body_chars": 4000
+}

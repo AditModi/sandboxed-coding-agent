@@ -1,0 +1,35 @@
+# The brain's Kubernetes identity. It can manage pods in agent-hands and exec into them,
+# and nothing anywhere else: not in its own namespace, not in the broker's.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: brain
+  namespace: agent-brain
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: hands-operator
+  namespace: agent-hands
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    # exec is a websocket GET, authorized as create on newer API servers; grant both.
+    verbs: ["create", "get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: brain-operates-hands
+  namespace: agent-hands
+subjects:
+  - kind: ServiceAccount
+    name: brain
+    namespace: agent-brain
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: hands-operator

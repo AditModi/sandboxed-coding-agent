@@ -1,0 +1,41 @@
+# The brain can create pods in agent-hands; that is how it gets hands. So a hijacked brain
+# could also create a pod WITHOUT the sandbox. This admission policy closes that door: in
+# agent-hands, a pod that is not an isolated Nitro Sandbox with no network device is
+# refused by the API server before it is ever scheduled.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: hands-must-be-sandboxed
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  validations:
+    - expression: >-
+        has(object.spec.runtimeClassName) &&
+        object.spec.runtimeClassName == 'isolated-sandbox'
+      message: "pods in agent-hands must run in an isolated Nitro Sandbox"
+    - expression: >-
+        has(object.metadata.annotations) &&
+        'sandbox.amazonaws.com/network-isolated' in object.metadata.annotations &&
+        object.metadata.annotations['sandbox.amazonaws.com/network-isolated'] == 'true'
+      message: "pods in agent-hands must boot with no network device"
+    - expression: >-
+        !has(object.spec.serviceAccountName) || object.spec.serviceAccountName == 'default'
+      message: "pods in agent-hands get no service account identity"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: hands-must-be-sandboxed
+spec:
+  policyName: hands-must-be-sandboxed
+  validationActions: ["Deny"]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: agent-hands

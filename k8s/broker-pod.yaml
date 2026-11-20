@@ -1,0 +1,56 @@
+# The git broker. A bare Pod, because its Cedar policy is generated from this exact spec and
+# the policy annotation is immutable: replacing the broker is a deliberate act.
+# scripts/02-setup.sh fills the <PLACEHOLDERS>, generates the policy from the rendered spec
+# and adds it as the sandbox.amazonaws.com/policy annotation.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: broker
+  namespace: agent-broker
+  labels:
+    app: broker
+  annotations:
+    # Auto Mode may consolidate nodes, and nothing recreates a bare pod.
+    karpenter.sh/do-not-disrupt: "true"
+spec:
+  runtimeClassName: confidential-sandbox
+  serviceAccountName: broker
+  hostname: broker
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  nodeSelector:
+    kubernetes.io/arch: amd64
+  securityContext:
+    runAsUser: 65534
+    runAsGroup: 65534
+    runAsNonRoot: true
+    supplementalGroupsPolicy: Strict
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: broker
+      image: <BROKER_IMAGE>
+      env:
+        # Both Region names: the Pod Identity webhook skips AWS_DEFAULT_REGION when only
+        # AWS_REGION is set, and a policy generated with --with-pod-identity expects both.
+        - { name: AWS_REGION, value: <AWS_REGION> }
+        - { name: AWS_DEFAULT_REGION, value: <AWS_REGION> }
+        - { name: KMS_KEY_ARN, value: <KMS_KEY_ARN> }
+        # Pinned like every variable here: the broker cannot be pointed at another repo
+        # without changing PCR17.
+        - { name: GITHUB_REPO, value: <GITHUB_REPO> }
+        # Ciphertext, not a secret. Useless without an attestation KMS accepts (experiment 5).
+        - { name: GITHUB_TOKEN_CIPHERTEXT, value: <GITHUB_TOKEN_CIPHERTEXT> }
+      ports:
+        - containerPort: 8080
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      # Requests only: a sandbox is sized from its requests. The guest unpacks the image and
+      # the broker makes a 4096-bit RSA key at start, so give it room.
+      resources:
+        requests:
+          cpu: "1"
+          memory: 1Gi

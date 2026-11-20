@@ -1,0 +1,7 @@
+# Pinned: the image digest is pinned in the Cedar policy and measured into PCR17, so an
+# unpinned dependency is an unapproved image waiting to happen. Same versions as the AWS
+# blueprints (aws-samples/sample-eks-nitro-sandbox).
+boto3==1.43.118
+cryptography==50.0.2
+cbor2==6.1.5
+asn1crypto==1.5.1

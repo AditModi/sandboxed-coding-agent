@@ -1,0 +1,95 @@
+{
+  "_comment": [
+    "Adapted from aws-samples/sample-eks-nitro-sandbox (MIT-0), examples/confidential/_shared/kms-key-policy.json.",
+    "scripts/02-setup.sh drops this key and fills <ACCOUNT_ID>, <BROKER_ROLE_ARN> and <EXPECTED_PCR17>.",
+    "Allow-on-match plus deny-otherwise: the only kms:Decrypt allow is conditional on the attestation,",
+    "the two denies apply to every principal (a request with no attestation at all is denied too),",
+    "and key administration leaves out kms:Decrypt and kms:ReEncryptFrom so an admin cannot re-wrap the",
+    "token under a key with no gate. Whoever holds kms:PutKeyPolicy on this key is your real root of trust."
+  ],
+  "Version": "2012-10-17",
+  "Id": "sandboxed-coding-agent-broker-gate",
+  "Statement": [
+    {
+      "Sid": "KeyAdministration",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::<ACCOUNT_ID>:root"
+      },
+      "Action": [
+        "kms:CancelKeyDeletion",
+        "kms:CreateAlias",
+        "kms:DeleteAlias",
+        "kms:DescribeKey",
+        "kms:DisableKey",
+        "kms:EnableKey",
+        "kms:GetKeyPolicy",
+        "kms:GetKeyRotationStatus",
+        "kms:ListAliases",
+        "kms:ListGrants",
+        "kms:ListKeyPolicies",
+        "kms:ListResourceTags",
+        "kms:PutKeyPolicy",
+        "kms:ScheduleKeyDeletion",
+        "kms:TagResource",
+        "kms:UntagResource",
+        "kms:UpdateAlias"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "BuildTimeEncrypt",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::<ACCOUNT_ID>:root"
+      },
+      "Action": "kms:Encrypt",
+      "Resource": "*"
+    },
+    {
+      "Sid": "AttestedDecryptOnly",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "<BROKER_ROLE_ARN>"
+      },
+      "Action": "kms:Decrypt",
+      "Resource": "*",
+      "Condition": {
+        "StringEqualsIgnoreCase": {
+          "kms:RecipientAttestation:PCR17": "<EXPECTED_PCR17>",
+          "kms:RecipientAttestation:PCR8:ServiceName": "eks.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "DenyUnlessThePolicyMeasurementMatches",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "kms:Decrypt",
+        "kms:ReEncryptFrom"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIgnoreCase": {
+          "kms:RecipientAttestation:PCR17": "<EXPECTED_PCR17>"
+        }
+      }
+    },
+    {
+      "Sid": "DenyUnlessTheAttestationComesFromAnEKSSandbox",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "kms:Decrypt",
+        "kms:ReEncryptFrom"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEqualsIgnoreCase": {
+          "kms:RecipientAttestation:PCR8:ServiceName": "eks.amazonaws.com"
+        }
+      }
+    }
+  ]
+}
