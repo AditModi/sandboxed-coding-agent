@@ -8,7 +8,13 @@ An AI coding agent on Amazon EKS, split into three trust zones with AWS Nitro Sa
 - **Hands**, `runtimeClassName: isolated-sandbox` with `sandbox.amazonaws.com/network-isolated: "true"`: one VM per session, with no network. The repository's code, its tests and the model's commands run here.
 - **Broker**, `runtimeClassName: confidential-sandbox`: the only process that holds the GitHub token. AWS KMS releases the token only to this pod's measured Cedar policy. The broker only opens pull requests from `agent/*` branches, and never touches `.github/`.
 
-An article that explains every decision is coming soon on AWS Builder Center. Until then, [docs/](docs/README.md) walks through the design with all ten diagrams.
+The design is explained in a three-part series on AWS Builder Center:
+
+1. [Part 1: What AWS Nitro Sandboxes Really Are, and Your First Sandboxed Pod on EKS](https://builder.aws.com/content/3MMwmaKEiuHSn5ZCUmrwjo1n4q4/untrusted-code-trusted-token-part-1-of-3-what-aws-nitro-sandboxes-really-are-and-your-first-sandboxed-pod-on-eks)
+2. [Part 2: Building an AI Coding Agent on EKS That Cannot Leak Its Own Token](https://builder.aws.com/content/3MMyuhEjao14WiqJ0jt2UCVmP1T/untrusted-code-trusted-token-part-2-of-3-building-an-ai-coding-agent-on-eks-that-cannot-leak-its-own-token)
+3. [Part 3: Five Attacks on a Sandboxed AI Agent, and What Nitro Sandboxes Don't Solve](https://builder.aws.com/content/3MMvIiCpPurvSpxBqbf4eeqVhU6/untrusted-code-trusted-token-part-3-of-3-five-attacks-on-a-sandboxed-ai-agent-and-what-nitro-sandboxes-dont-solve)
+
+[docs/](docs/README.md) walks through the design with all ten diagrams.
 
 ![architecture](docs/images/07-architecture.png)
 
@@ -26,7 +32,7 @@ An article that explains every decision is coming soon on AWS Builder Center. Un
    - **Contents**: read and write
    - **Pull requests**: read and write
 3. Keep the token ready. `scripts/02-setup.sh` asks for it once, encrypts it with KMS and forgets it.
-4. Copy `.env.example` to `.env` and set `GITHUB_REPO=<you>/indian-numbers`.
+4. Copy `.env.example` to `.env` and set `GITHUB_REPO` to your repository, for example `GITHUB_REPO=AditModi/indian-numbers`.
 
 ## 1. Cluster and policy generator
 
